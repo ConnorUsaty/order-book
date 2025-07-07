@@ -3,10 +3,11 @@
 #pragma once
 
 #include <deque>
+
 #include "order.h"
 
 struct PriceLevel {
-    std::deque<Order*> orders; // process orders in FIFO
-    Price level;
-    Quantity total_quantity; // sum(all orders.quantity on this level)
+  std::deque<Order*> orders;  // process orders in FIFO
+  Price level{0};
+  Quantity total_quantity{0};  // sum(all orders.quantity on this level)
 };
