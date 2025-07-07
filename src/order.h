@@ -25,4 +25,16 @@ struct Order {
         price(_price),
         quantity(_quantity),
         timestamp(_timestamp) {}
+
+  // used for unit testing
+  bool operator==(const Order& rhs) const {
+    bool equal = true;
+    // if any of these fail we will return false
+    equal &= (this->id == rhs.id);
+    equal &= (this->side == rhs.side);
+    equal &= (this->price == rhs.price);
+    equal &= (this->quantity == rhs.quantity);
+    equal &= (this->timestamp == rhs.timestamp);
+    return equal;
+  }
 };
