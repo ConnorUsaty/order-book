@@ -2,24 +2,24 @@
 
 #include <cstdint>
 
-using OrderId = uint64_t;
-using Price = int64_t;  // store price in cents as int
-using Quantity = uint32_t;
-using Timestamp = uint64_t;
+using order_id_t = uint64_t;
+using price_t = int64_t;  // store price in cents as int
+using quantity_t = uint32_t;
+using timestamp_t = uint64_t;
 
 enum class Side : uint8_t { Buy, Sell };
 
 // each order must have the following data
 struct Order {
-  OrderId id;
+  order_id_t id;
   Side side;
-  Price price;
-  Quantity quantity;
-  Timestamp timestamp;
+  price_t price;
+  quantity_t quantity;
+  timestamp_t timestamp;
 
   Order() = default;
-  Order(OrderId _id, Side _side, Price _price, Quantity _quantity,
-        Timestamp _timestamp)
+  Order(order_id_t _id, Side _side, price_t _price, quantity_t _quantity,
+        timestamp_t _timestamp)
       : id(_id),
         side(_side),
         price(_price),

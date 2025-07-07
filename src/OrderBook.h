@@ -51,7 +51,7 @@ class OrderBook {
     // can use part of the level
     while (!price_level.orders.empty() && order.quantity > 0) {
       auto curr = price_level.orders.front();
-      Quantity matched = std::min(curr->quantity, order.quantity);
+      quantity_t matched = std::min(curr->quantity, order.quantity);
       price_level.total_quantity -= matched;
       curr->quantity -= matched;
       order.quantity -= matched;
@@ -80,7 +80,7 @@ class OrderBook {
     price_level->total_quantity += order.quantity;
   }
 
-  void remove_order(const OrderId id) {
+  void remove_order(const order_id_t id) {
     // removes an order from the OrderBook
     // must still remove from PriceLevel
     order_pool.erase(id);
@@ -98,10 +98,10 @@ class OrderBook {
     }
   }
 
-  std::unordered_map<OrderId, Order> order_pool;
-  std::unordered_map<OrderId, PriceLevel*> order_level;
+  std::unordered_map<order_id_t, Order> order_pool;
+  std::unordered_map<order_id_t, PriceLevel*> order_level;
 
   // store bids and asks in an ordered format for efficient processing
-  std::map<Price, PriceLevel, std::greater<>> bids;
-  std::map<Price, PriceLevel, std::less<>> asks;
+  std::map<price_t, PriceLevel, std::greater<>> bids;
+  std::map<price_t, PriceLevel, std::less<>> asks;
 };

@@ -8,6 +8,6 @@
 
 struct PriceLevel {
   std::deque<Order*> orders;  // process orders in FIFO
-  Price level{0};
-  Quantity total_quantity{0};  // sum(all orders.quantity on this level)
+  price_t level{0};
+  quantity_t total_quantity{0};  // sum(all orders.quantity on this level)
 };
