@@ -1,5 +1,7 @@
 /* A price level is a collection of orders at the same price */
 
+#pragma once
+
 #include <deque>
 #include "order.h"
 
