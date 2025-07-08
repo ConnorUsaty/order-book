@@ -83,6 +83,51 @@ TEST_F(OrderBookUnitTest, AddOrderNoMatch) {
   EXPECT_EQ(book.asks.size(), 1);
 }
 
+TEST_F(OrderBookUnitTest, BasicCancelOrder) {
+  OrderBook book;
+
+  Order buy(1, Side::Buy, 100, 10, 1);
+  book.add_order(buy);
+
+  // verify initial state
+  EXPECT_EQ(book.order_pool.size(), 1);
+  EXPECT_EQ(book.order_pool.begin()->first, buy.id);
+  EXPECT_EQ(book.order_pool.begin()->second, buy);
+  EXPECT_EQ(book.order_level.size(), 1);
+  EXPECT_EQ(book.bids.size(), 1);
+  EXPECT_EQ(book.bids.begin()->first, 100);
+  EXPECT_EQ(book.bids.begin()->second.orders.size(), 1);
+  // EXPECT_EQ(*(book.bids.begin()->second.orders.begin()), buy);
+  EXPECT_EQ(book.bids.begin()->second.level, 100);
+  EXPECT_EQ(book.bids.begin()->second.total_quantity, 10);
+  EXPECT_EQ(book.asks.size(), 0);
+
+  book.remove_order(2);
+  book.remove_order(3);
+  book.remove_order(4);
+
+  // verify nothing changed
+  EXPECT_EQ(book.order_pool.size(), 1);
+  EXPECT_EQ(book.order_pool.begin()->first, buy.id);
+  EXPECT_EQ(book.order_pool.begin()->second, buy);
+  EXPECT_EQ(book.order_level.size(), 1);
+  EXPECT_EQ(book.bids.size(), 1);
+  EXPECT_EQ(book.bids.begin()->first, 100);
+  EXPECT_EQ(book.bids.begin()->second.orders.size(), 1);
+  // EXPECT_EQ(*(book.bids.begin()->second.orders.begin()), buy);
+  EXPECT_EQ(book.bids.begin()->second.level, 100);
+  EXPECT_EQ(book.bids.begin()->second.total_quantity, 10);
+  EXPECT_EQ(book.asks.size(), 0);
+
+  book.remove_order(1);
+
+  // verify order removed
+  EXPECT_EQ(book.order_pool.size(), 0);
+  EXPECT_EQ(book.order_level.size(), 0);
+  EXPECT_EQ(book.bids.size(), 0);
+  EXPECT_EQ(book.asks.size(), 0);
+}
+
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
