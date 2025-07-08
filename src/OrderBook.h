@@ -9,6 +9,19 @@
 
 #include "PriceLevel.h"
 
+// to easily access metrics of OrderBook
+struct BookTop {
+  price_t bid_price{0};
+  quantity_t bid_quantity{0};
+  price_t ask_price{0};
+  quantity_t ask_quantity{0};
+
+  BookTop() = default;
+
+  inline price_t spread() const { return ask_price - bid_price; }
+  inline price_t mid() const { return (ask_price + bid_price) / 2; }
+};
+
 class OrderBook {
  public:
   void add_order(Order& order) {
@@ -32,6 +45,49 @@ class OrderBook {
   }
 
   void cancel_order(const order_id_t id) { remove_order(id); }
+
+  BookTop get_top() const {
+    BookTop top;
+    if (!bids.empty()) {
+      top.bid_price = bids.begin()->first;
+      top.bid_quantity = bids.begin()->second.total_quantity;
+    }
+    if (!asks.empty()) {
+      top.ask_price = asks.begin()->first;
+      top.ask_quantity = asks.begin()->second.total_quantity;
+    }
+    return top;
+  }
+
+  inline size_t bid_depth() const { return bids.size(); }
+
+  inline size_t ask_depth() const { return asks.size(); }
+
+  std::vector<LevelInfo> get_bids(size_t max_depth) const {
+    std::vector<LevelInfo> result;
+    if (max_depth == 0) return result;
+    result.reserve(std::min(max_depth, bid_depth()));
+
+    for (auto const& [price, price_level] : bids) {
+      result.push_back(LevelInfo{price, price_level.total_quantity,
+                                 price_level.orders.size()});
+      if (--max_depth == 0) break;
+    }
+    return result;
+  }
+
+  std::vector<LevelInfo> get_asks(size_t max_depth) const {
+    std::vector<LevelInfo> result;
+    if (max_depth == 0) return result;
+    result.reserve(std::min(max_depth, ask_depth()));
+
+    for (auto const& [price, price_level] : asks) {
+      result.push_back(LevelInfo{price, price_level.total_quantity,
+                                 price_level.orders.size()});
+      if (--max_depth == 0) break;
+    }
+    return result;
+  }
 
   void execute_match(Order& order, PriceLevel& price_level) {
     // executes a match from either side on a price_level
