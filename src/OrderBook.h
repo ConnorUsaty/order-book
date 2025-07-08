@@ -31,6 +31,8 @@ class OrderBook {
     }
   }
 
+  void cancel_order(const order_id_t id) { remove_order(id); }
+
   void execute_match(Order& order, PriceLevel& price_level) {
     // executes a match from either side on a price_level
     // below conditions must hold and should be checked before calling
@@ -55,12 +57,12 @@ class OrderBook {
       price_level.total_quantity -= matched;
       curr->quantity -= matched;
       order.quantity -= matched;
-      if (curr->quantity == 0) price_level.orders.pop_front();
+      if (curr->quantity == 0) remove_order(curr->id);
     }
   }
 
   void insert_order(const Order& order) {
-    // inserts order into the OrderBook
+    // inserts order into the OrderBook and PriceLevel
     assert(order.quantity > 0);
 
     PriceLevel* price_level = nullptr;
@@ -75,22 +77,37 @@ class OrderBook {
     auto [it, inserted] = order_pool.insert({order.id, order});
     Order* stored_order =
         &(it->second);  // needed to get a pointer to the stored order
-    order_level.insert({order.id, price_level});
     price_level->orders.push_back(stored_order);
     price_level->total_quantity += order.quantity;
+    auto order_it = std::prev(price_level->orders.end());
+    order_level.insert({order.id, {price_level, order_it}});
   }
 
   void remove_order(const order_id_t id) {
-    // removes an order from the OrderBook
-    // must still remove from PriceLevel
+    auto it = order_pool.find(id);
+    if (it == order_pool.end()) return;
+
+    // remove from PriceLevel
+    auto [level, order_it] = order_level[id];
+    level->total_quantity -= (*order_it)->quantity;
+    level->orders.erase(order_it);
+    if (level->orders.empty()) {
+      remove_level(*level, it->second.side);
+    }
+
+    // remove from OrderBook
     order_pool.erase(id);
     order_level.erase(id);
   }
 
   void remove_level(PriceLevel& price_level, Side side) {
     for (auto& order : price_level.orders) {
-      remove_order(order->id);
+      // remove from OrderBook
+      order_pool.erase(order->id);
+      order_level.erase(order->id);
     }
+
+    // this deallocates the PriceLevel
     if (side == Side::Buy) {
       bids.erase(price_level.level);
     } else {
@@ -99,7 +116,9 @@ class OrderBook {
   }
 
   std::unordered_map<order_id_t, Order> order_pool;
-  std::unordered_map<order_id_t, PriceLevel*> order_level;
+  std::unordered_map<order_id_t,
+                     std::pair<PriceLevel*, std::list<Order*>::iterator>>
+      order_level;
 
   // store bids and asks in an ordered format for efficient processing
   std::map<price_t, PriceLevel, std::greater<>> bids;
