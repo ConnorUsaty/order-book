@@ -200,6 +200,83 @@ TEST_F(OrderBookUnitTest, CancelOrderComplex) {
   EXPECT_EQ(book.order_level.size(), 2);
 }
 
+TEST_F(OrderBookUnitTest, GetTopComplex) {
+  OrderBook book;
+
+  // verify empty book
+  BookTop empty_top = book.get_top();
+  EXPECT_EQ(empty_top.bid_price, 0);
+  EXPECT_EQ(empty_top.bid_quantity, 0);
+  EXPECT_EQ(empty_top.ask_price, 0);
+  EXPECT_EQ(empty_top.ask_quantity, 0);
+  EXPECT_EQ(empty_top.spread(), 0);
+  EXPECT_EQ(empty_top.mid(), 0);
+
+  // verify bid only
+  Order buy1(1, Side::Buy, 100, 10, 1);
+  Order buy2(2, Side::Buy, 99, 20, 2);
+  Order buy3(3, Side::Buy, 100, 15, 3);
+  book.add_order(buy1);
+  book.add_order(buy2);
+  book.add_order(buy3);
+
+  BookTop bid_only = book.get_top();
+  EXPECT_EQ(bid_only.bid_price, 100);
+  EXPECT_EQ(bid_only.bid_quantity, 25);
+  EXPECT_EQ(bid_only.ask_price, 0);
+  EXPECT_EQ(bid_only.ask_quantity, 0);
+
+  // add asks
+  Order sell1(4, Side::Sell, 102, 30, 4);
+  Order sell2(5, Side::Sell, 101, 5, 5);
+  Order sell3(6, Side::Sell, 101, 10, 6);
+  book.add_order(sell1);
+  book.add_order(sell2);
+  book.add_order(sell3);
+
+  BookTop full_book = book.get_top();
+  EXPECT_EQ(full_book.bid_price, 100);
+  EXPECT_EQ(full_book.bid_quantity, 25);
+  EXPECT_EQ(full_book.ask_price, 101);
+  EXPECT_EQ(full_book.ask_quantity, 15);
+  EXPECT_EQ(full_book.spread(), 1);
+  EXPECT_EQ(full_book.mid(), 100);
+
+  // verify partial match
+  Order cross_buy(7, Side::Buy, 101, 12, 7);
+  book.add_order(cross_buy);
+
+  BookTop after_match = book.get_top();
+  EXPECT_EQ(after_match.bid_price, 100);
+  EXPECT_EQ(after_match.bid_quantity, 25);
+  EXPECT_EQ(after_match.ask_price, 101);
+  EXPECT_EQ(after_match.ask_quantity, 3);
+
+  // verify removing best bid level
+  book.cancel_order(1);
+  book.cancel_order(3);  // removes entire 100 level
+
+  BookTop new_best = book.get_top();
+  EXPECT_EQ(new_best.bid_price, 99);  // new best bid
+  EXPECT_EQ(new_best.bid_quantity, 20);
+  EXPECT_EQ(new_best.ask_price, 101);
+  EXPECT_EQ(new_best.ask_quantity, 3);
+  EXPECT_EQ(new_best.spread(), 2);
+  EXPECT_EQ(new_best.mid(), 100);
+
+  // verify a wide spread
+  Order sell_high(8, Side::Sell, 200, 100, 8);
+  book.add_order(sell_high);
+  book.cancel_order(5);
+  book.cancel_order(6);
+
+  BookTop wide_spread = book.get_top();
+  EXPECT_EQ(wide_spread.bid_price, 99);
+  EXPECT_EQ(wide_spread.ask_price, 102);
+  EXPECT_EQ(wide_spread.spread(), 3);
+  EXPECT_EQ(wide_spread.mid(), 100);
+}
+
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
