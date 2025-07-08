@@ -11,6 +11,8 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -march=native -flto")
 
 include_directories(${CMAKE_SOURCE_DIR}/src)
 
+add_executable(OrderBook_perf tests/perf/OrderBook_perf.cpp)
+
 find_package(GTest REQUIRED)
 
 enable_testing()
