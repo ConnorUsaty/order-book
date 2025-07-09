@@ -13,7 +13,7 @@ TEST_F(OrderBookUnitTest, AddOrderFullMatch) {
 
   Order ord1(1, Side::Buy, 105, 4, 1);
   book.add_order(ord1);
-  auto& acc_ord1 = book.order_pool[1];
+  auto& acc_ord1 = *(book.order_pool[1]);
 
   EXPECT_EQ(acc_ord1, ord1);
   EXPECT_EQ(book.order_pool.size(), 1);
@@ -23,7 +23,7 @@ TEST_F(OrderBookUnitTest, AddOrderFullMatch) {
 
   Order ord2(2, Side::Buy, 105, 4, 2);
   book.add_order(ord2);
-  auto& acc_ord2 = book.order_pool[2];
+  auto& acc_ord2 = *(book.order_pool[2]);
 
   EXPECT_EQ(acc_ord2, ord2);
   EXPECT_EQ(book.order_pool.size(), 2);
@@ -35,7 +35,7 @@ TEST_F(OrderBookUnitTest, AddOrderFullMatch) {
   // covers the 8 buy orders and leaves 2 extra
   Order ord3(3, Side::Sell, 105, 10, 3);
   book.add_order(ord3);
-  auto& acc_ord3 = book.order_pool[3];
+  auto& acc_ord3 = *(book.order_pool[3]);
 
   EXPECT_EQ(acc_ord3, ord3);
   EXPECT_EQ(book.order_pool.size(), 1);
@@ -60,7 +60,7 @@ TEST_F(OrderBookUnitTest, AddOrderPartialMatch) {
   EXPECT_EQ(book.bids.size(), 0);
   EXPECT_EQ(book.asks.size(), 1);
 
-  auto& remaining_order = book.order_pool.begin()->second;
+  auto& remaining_order = *(book.order_pool.begin()->second);
   EXPECT_EQ(remaining_order.id, 1);
   EXPECT_EQ(remaining_order.side, Side::Sell);
   EXPECT_EQ(remaining_order.price, 100);
@@ -92,7 +92,7 @@ TEST_F(OrderBookUnitTest, CancelOrderBasic) {
   // verify initial state
   EXPECT_EQ(book.order_pool.size(), 1);
   EXPECT_EQ(book.order_pool.begin()->first, buy.id);
-  EXPECT_EQ(book.order_pool.begin()->second, buy);
+  EXPECT_EQ(*(book.order_pool.begin()->second), buy);
   EXPECT_EQ(book.order_level.size(), 1);
   EXPECT_EQ(book.bids.size(), 1);
   EXPECT_EQ(book.bids.begin()->first, 100);
@@ -109,7 +109,7 @@ TEST_F(OrderBookUnitTest, CancelOrderBasic) {
   // verify nothing changed
   EXPECT_EQ(book.order_pool.size(), 1);
   EXPECT_EQ(book.order_pool.begin()->first, buy.id);
-  EXPECT_EQ(book.order_pool.begin()->second, buy);
+  EXPECT_EQ(*(book.order_pool.begin()->second), buy);
   EXPECT_EQ(book.order_level.size(), 1);
   EXPECT_EQ(book.bids.size(), 1);
   EXPECT_EQ(book.bids.begin()->first, 100);

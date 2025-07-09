@@ -7,6 +7,7 @@
 #include <map>
 #include <unordered_map>
 
+#include "MemoryPool.h"
 #include "PriceLevel.h"
 
 // to easily access metrics of OrderBook
@@ -52,10 +53,10 @@ class OrderBook {
 
     // update PriceLevel
     auto& [price_level, order_it] = order_level[id];
-    price_level->total_quantity -= (it->second.quantity - new_quantity);
+    price_level->total_quantity -= (it->second->quantity - new_quantity);
 
     // update OrderBook
-    it->second.quantity = new_quantity;
+    it->second->quantity = new_quantity;
   }
 
   void cancel_order(const order_id_t id) { remove_order(id); }
@@ -134,23 +135,22 @@ class OrderBook {
   void insert_order(const Order& order) {
     // inserts order into the OrderBook and PriceLevel
     assert(order.quantity > 0);
+    Order* pooled_order = mem_pool.acquire(order);
 
     PriceLevel* price_level = nullptr;
-    if (order.side == Side::Buy) {
-      price_level = &(bids[order.price]);
+    if (pooled_order->side == Side::Buy) {
+      price_level = &(bids[pooled_order->price]);
     } else {
-      price_level = &(asks[order.price]);
+      price_level = &(asks[pooled_order->price]);
     }
-    price_level->level = order.price;
+    price_level->level = pooled_order->price;
     assert(price_level != nullptr);
 
-    auto [it, inserted] = order_pool.insert({order.id, order});
-    Order* stored_order =
-        &(it->second);  // needed to get a pointer to the stored order
-    price_level->orders.push_back(stored_order);
-    price_level->total_quantity += order.quantity;
+    order_pool.insert({pooled_order->id, pooled_order});
+    price_level->orders.push_back(pooled_order);
+    price_level->total_quantity += pooled_order->quantity;
     auto order_it = std::prev(price_level->orders.end());
-    order_level.insert({order.id, {price_level, order_it}});
+    order_level.insert({pooled_order->id, {price_level, order_it}});
   }
 
   void remove_order(const order_id_t id) {
@@ -162,12 +162,15 @@ class OrderBook {
     level->total_quantity -= (*order_it)->quantity;
     level->orders.erase(order_it);
     if (level->orders.empty()) {
-      remove_level(*level, it->second.side);
+      remove_level(*level, it->second->side);
     }
 
     // remove from OrderBook
     order_pool.erase(id);
     order_level.erase(id);
+
+    // remove from MemoryPool
+    mem_pool.release(*order_it);
   }
 
   void remove_level(PriceLevel& price_level, Side side) {
@@ -175,6 +178,8 @@ class OrderBook {
       // remove from OrderBook
       order_pool.erase(order->id);
       order_level.erase(order->id);
+      // remove from MemoryPool
+      mem_pool.release(order);
     }
 
     // this deallocates the PriceLevel
@@ -185,7 +190,8 @@ class OrderBook {
     }
   }
 
-  std::unordered_map<order_id_t, Order> order_pool;
+  MemoryPool<Order> mem_pool;
+  std::unordered_map<order_id_t, Order*> order_pool;
   std::unordered_map<order_id_t,
                      std::pair<PriceLevel*, std::list<Order*>::iterator>>
       order_level;
