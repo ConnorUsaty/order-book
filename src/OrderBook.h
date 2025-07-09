@@ -44,6 +44,20 @@ class OrderBook {
     }
   }
 
+  void modify_order(const order_id_t id, const quantity_t new_quantity) {
+    if (new_quantity == 0) remove_order(id);
+
+    auto it = order_pool.find(id);
+    if (it == order_pool.end()) return;
+
+    // update PriceLevel
+    auto& [price_level, order_it] = order_level[id];
+    price_level->total_quantity -= (it->second.quantity - new_quantity);
+
+    // update OrderBook
+    it->second.quantity = new_quantity;
+  }
+
   void cancel_order(const order_id_t id) { remove_order(id); }
 
   BookTop get_top() const {
